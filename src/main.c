@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <getopt.h>
 
@@ -19,6 +20,8 @@ int main(int argc, char *argv[]){
 	int opt = 0;
 
 	int dbfd = -1; // database file descriptor
+	struct dbheader_t *header = NULL;
+
 	
 	while ( (opt = getopt(argc, argv, "nf:")) != -1 ){
 		switch(opt){
@@ -50,10 +53,20 @@ int main(int argc, char *argv[]){
 			printf("Unable to create database file");
 			return -1;
 		}
-	}else {
+		if (create_db_header(dbfd, &header) == STATUS_ERROR){
+			printf("Unable to create header meta data\n");
+			return -1;
+		}
+	}
+	else {
 		dbfd = open_db_file(filepath);
 		if (dbfd == STATUS_ERROR){
 			printf("Unable to open database file");
+			return -1;
+		}
+		
+		if (validate_db_header(dbfd, &header) == STATUS_ERROR){
+			printf("Failed to validate database header\n");
 			return -1;
 		}
 	}
@@ -61,7 +74,16 @@ int main(int argc, char *argv[]){
 	
 	printf("Newfile: %d\n",newfile);
 	printf("Filepath: %s\n",filepath);
+
+	printf("Header.Magic: %x\n",header->magic);
+	printf("Header.Version: %d\n",header->version);
+	printf("Header.Count: %d\n",header->count);
+	printf("Header.filesize: %d\n",header->filesize);
+
+	output_file(dbfd, header);
 	
+
+	printf("\n");
 	return 0;
 
 }
